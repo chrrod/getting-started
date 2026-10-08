@@ -539,3 +539,4 @@ def standardize_trace_records(
 
     df = pd.DataFrame.from_records(normalized_list)
     return validate_standard_schema(df, allow_extra_columns=True)
+

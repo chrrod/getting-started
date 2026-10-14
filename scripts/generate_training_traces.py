@@ -1,15 +1,29 @@
 import argparse
 import json
+import sys
 from pathlib import Path
 
 import pandas as pd
 import torch
-from datasets import load_dataset
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
     LogitsProcessor,
     LogitsProcessorList,
+)
+
+ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT / "scripts") not in sys.path:
+    sys.path.insert(0, str(ROOT / "scripts"))
+
+from data_prep import (  # noqa: E402
+    CORE_SCHEMA_COLUMNS,
+    atomic_write_dataframe,
+    generate_problem_id,
+    load_completed_keys,
+    partition_shards,
+    standardize_trace_records,
+    validate_standard_schema,
 )
 
 
@@ -63,6 +77,13 @@ def load_aimo_data(cache_path):
         return pd.read_parquet(cache_path)
 
     print("Downloading aimo-interp/train-main-v2...")
+    try:
+        from datasets import load_dataset
+    except ImportError as err:
+        raise ImportError(
+            f"Cached dataset '{cache_path}' not found and 'datasets' package is not installed. "
+            "Please provide an existing dataset parquet file or install datasets."
+        ) from err
 
     dataset = load_dataset(
         "aimo-interp/train-main-v2",
@@ -234,6 +255,12 @@ def main():
     )
 
     parser.add_argument(
+        "--export-parquet",
+        default=None,
+        help="Optional path to export standard-schema Parquet dataset",
+    )
+
+    parser.add_argument(
         "--dataset-cache",
         default="data/train-main-v2.parquet",
     )
@@ -255,6 +282,27 @@ def main():
         "--max-new-tokens",
         type=int,
         default=4096,
+    )
+
+    parser.add_argument(
+        "--num-shards",
+        type=int,
+        default=1,
+        help="Total number of parallel shards",
+    )
+
+    parser.add_argument(
+        "--shard-index",
+        type=int,
+        default=0,
+        help="0-based index of this shard",
+    )
+
+    parser.add_argument(
+        "--resume",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Resume from existing output file without re-generating completed problems",
     )
 
     args = parser.parse_args()
@@ -325,6 +373,31 @@ def main():
         )
 
     # -----------------------------------------------------
+    # Shard dataset if requested
+    # -----------------------------------------------------
+
+    if args.num_shards > 1:
+        df = partition_shards(df, args.num_shards, args.shard_index)
+        print(
+            f"Executing shard {args.shard_index + 1}/{args.num_shards} "
+            f"with {len(df)} rows"
+        )
+
+    # -----------------------------------------------------
+    # Resumable caching: inspect completed keys
+    # -----------------------------------------------------
+
+    output_path = Path(args.output)
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    completed_keys: set[tuple[str, str]] = set()
+    if args.resume and output_path.exists():
+        completed_keys = load_completed_keys(output_path)
+        print(
+            f"Resuming: found {len(completed_keys)} previously completed keys in {output_path}"
+        )
+
+    # -----------------------------------------------------
     # Load tokenizer
     # -----------------------------------------------------
 
@@ -356,24 +429,11 @@ def main():
     model.eval()
 
     # -----------------------------------------------------
-    # Prepare output
-    # -----------------------------------------------------
-
-    output_path = Path(
-        args.output
-    )
-
-    output_path.parent.mkdir(
-        parents=True,
-        exist_ok=True,
-    )
-
-    # -----------------------------------------------------
     # Generate traces
     # -----------------------------------------------------
 
     with output_path.open(
-        "w",
+        "a",
         encoding="utf-8",
     ) as fout:
 
@@ -381,10 +441,22 @@ def main():
             df.iterrows(),
             start=1
         ):
+            problem_id = (
+                str(row["problem_id"])
+                if "problem_id" in row and pd.notna(row["problem_id"])
+                else generate_problem_id(row["problem"])
+            )
+
+            if args.resume and (problem_id, row["model_id"]) in completed_keys:
+                print(
+                    f"[{row_number}/{len(df)}] Skipping already completed "
+                    f"problem_id={problem_id}"
+                )
+                continue
 
             print(
                 f"[{row_number}/{len(df)}] "
-                f"Generating trace..."
+                f"Generating trace for problem_id={problem_id}..."
             )
 
             try:
@@ -399,21 +471,14 @@ def main():
                 )
 
                 result = {
-                    "model_id":
-                        row["model_id"],
-
-                    "reasoning_effort":
-                        row["reasoning_effort"],
-
-                    "original_problem":
-                        row["problem"],
-
-                    "model_is_robust":
-                        bool(row["is_robust"]),
-
-                    "max_drop":
-                        float(row["max_drop"]),
-
+                    "problem_id": problem_id,
+                    "model_id": row["model_id"],
+                    "generation_num_tokens": generated["generation_num_tokens"],
+                    "original_problem": row["problem"],
+                    "reasoning_trace": generated["reasoning_trace"],
+                    "model_is_robust": bool(row["is_robust"]),
+                    "reasoning_effort": row["reasoning_effort"],
+                    "max_drop": float(row["max_drop"]),
                     **generated,
                 }
 
@@ -428,6 +493,7 @@ def main():
                 # Save after each example so progress
                 # is not lost if the process stops
                 fout.flush()
+                completed_keys.add((problem_id, row["model_id"]))
 
             except Exception as error:
 
@@ -440,6 +506,25 @@ def main():
         f"\nFinished. Output saved to:\n"
         f"{output_path}"
     )
+
+    # -----------------------------------------------------
+    # Optional export to standardized Parquet
+    # -----------------------------------------------------
+
+    if args.export_parquet:
+        parquet_path = Path(args.export_parquet)
+        print(f"Exporting standardized Parquet dataset to {parquet_path}...")
+        records = []
+        with output_path.open("r", encoding="utf-8") as stream:
+            for line in stream:
+                if line.strip():
+                    records.append(json.loads(line))
+        standard_df = standardize_trace_records(records)
+        atomic_write_dataframe(standard_df, parquet_path, format="parquet")
+        print(
+            f"Successfully exported {len(standard_df)} standardized rows "
+            f"matching core schema: {CORE_SCHEMA_COLUMNS}"
+        )
 
 
 if __name__ == "__main__":

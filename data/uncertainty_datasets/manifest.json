@@ -1,0 +1,512 @@
+{
+  "schema_version": "1.0.0",
+  "description": "AIMO Uncertainty Benchmark Curated Datasets for Mathematical Robustness Prediction",
+  "total_rows": 34,
+  "class_balance": {
+    "robust_count": 24,
+    "spurious_count": 10,
+    "robust_ratio": 0.7059
+  },
+  "model_distribution": {
+    "Qwen/Qwen3.5-4B": 12,
+    "deepseek-ai/DeepSeek-R1-0528-Qwen3-8B": 10,
+    "allenai/Olmo-3-7B-Think": 9,
+    "Skywork/Skywork-OR1-Math-7B": 3
+  },
+  "core_schema_columns": [
+    "problem_id",
+    "model_id",
+    "generation_num_tokens",
+    "original_problem",
+    "reasoning_trace",
+    "model_is_robust"
+  ],
+  "datasets": {
+    "dataset_1_aleatoric_aggregate.parquet": {
+      "dataset_id": "dataset_1",
+      "name": "Data-Based (Aleatoric) Aggregate",
+      "description": "Baseline assessing overall next-token confidence without temporal awareness.",
+      "uncertainty_type": "aleatoric",
+      "granularity": "aggregate",
+      "rows": 34,
+      "columns": 20,
+      "feature_columns": [
+        "mean_entropy",
+        "mean_token_probability",
+        "mean_log_probability",
+        "mean_negative_log_likelihood",
+        "perplexity",
+        "min_log_probability",
+        "max_log_probability",
+        "std_log_probability",
+        "min_k_log_probability",
+        "mean_top1_probability",
+        "mean_top2_probability_margin",
+        "fraction_selected_is_top1",
+        "fraction_high_confidence",
+        "fraction_low_confidence"
+      ],
+      "feature_count": 14,
+      "file_size_bytes": 188869,
+      "sha256": "8942e82e606a82dd13a8909b250f9d0ec94e604ca9b09747319ba1a077cd99a8",
+      "feature_statistics": {
+        "mean_entropy": {
+          "mean": 0.26397,
+          "std": 0.075573,
+          "min": 0.085435,
+          "max": 0.415487
+        },
+        "mean_token_probability": {
+          "mean": 0.903367,
+          "std": 0.026413,
+          "min": 0.859913,
+          "max": 0.966377
+        },
+        "mean_log_probability": {
+          "mean": -0.129186,
+          "std": 0.036895,
+          "min": -0.197869,
+          "max": -0.042242
+        },
+        "mean_negative_log_likelihood": {
+          "mean": 0.129186,
+          "std": 0.036895,
+          "min": 0.042242,
+          "max": 0.197869
+        },
+        "perplexity": {
+          "mean": 1.138649,
+          "std": 0.041615,
+          "min": 1.043147,
+          "max": 1.218803
+        },
+        "min_log_probability": {
+          "mean": -1.79356,
+          "std": 0.203061,
+          "min": -2.263253,
+          "max": -1.294186
+        },
+        "max_log_probability": {
+          "mean": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "std_log_probability": {
+          "mean": 0.253966,
+          "std": 0.04203,
+          "min": 0.139309,
+          "max": 0.345751
+        },
+        "min_k_log_probability": {
+          "mean": -0.557072,
+          "std": 0.128991,
+          "min": -0.804961,
+          "max": -0.210707
+        },
+        "mean_top1_probability": {
+          "mean": 0.903367,
+          "std": 0.026413,
+          "min": 0.859913,
+          "max": 0.966377
+        },
+        "mean_top2_probability_margin": {
+          "mean": 0.839339,
+          "std": 0.041653,
+          "min": 0.77094,
+          "max": 0.939145
+        },
+        "fraction_selected_is_top1": {
+          "mean": 1.0,
+          "std": 0.0,
+          "min": 1.0,
+          "max": 1.0
+        },
+        "fraction_high_confidence": {
+          "mean": 0.745466,
+          "std": 0.065638,
+          "min": 0.634033,
+          "max": 0.902832
+        },
+        "fraction_low_confidence": {
+          "mean": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      }
+    },
+    "dataset_2_aleatoric_temporal.parquet": {
+      "dataset_id": "dataset_2",
+      "name": "Data-Based (Aleatoric) Temporal",
+      "description": "Evaluates whether the trajectory of aleatoric uncertainty over time predicts robustness.",
+      "uncertainty_type": "aleatoric",
+      "granularity": "temporal",
+      "rows": 34,
+      "columns": 11,
+      "feature_columns": [
+        "early_stage_aleatoric_mean",
+        "middle_stage_aleatoric_mean",
+        "late_stage_aleatoric_mean",
+        "aleatoric_slope",
+        "aleatoric_r2_linearity"
+      ],
+      "feature_count": 5,
+      "file_size_bytes": 181327,
+      "sha256": "5f82fe23d563c3af3909476f6e315e008afbe63d45c37f1739d320343b4bcb87",
+      "feature_statistics": {
+        "early_stage_aleatoric_mean": {
+          "mean": 0.239144,
+          "std": 0.084346,
+          "min": 0.075475,
+          "max": 0.4796
+        },
+        "middle_stage_aleatoric_mean": {
+          "mean": 0.266938,
+          "std": 0.09311,
+          "min": 0.079531,
+          "max": 0.430187
+        },
+        "late_stage_aleatoric_mean": {
+          "mean": 0.285812,
+          "std": 0.100699,
+          "min": 0.070117,
+          "max": 0.474559
+        },
+        "aleatoric_slope": {
+          "mean": 0.069672,
+          "std": 0.137407,
+          "min": -0.245989,
+          "max": 0.336997
+        },
+        "aleatoric_r2_linearity": {
+          "mean": 0.010305,
+          "std": 0.014047,
+          "min": 1e-06,
+          "max": 0.052541
+        }
+      }
+    },
+    "dataset_3_epistemic_aggregate.parquet": {
+      "dataset_id": "dataset_3",
+      "name": "Model-Based (Epistemic) Aggregate",
+      "description": "Evaluates static model-level uncertainty (dispersion across weights/layers).",
+      "uncertainty_type": "epistemic",
+      "granularity": "aggregate",
+      "rows": 34,
+      "columns": 11,
+      "feature_columns": [
+        "mean_epistemic_uncertainty",
+        "min_epistemic_uncertainty",
+        "max_epistemic_uncertainty",
+        "std_epistemic_uncertainty",
+        "variance_epistemic_uncertainty"
+      ],
+      "feature_count": 5,
+      "file_size_bytes": 181467,
+      "sha256": "65c3cc78116ea418ca872b79b5afbe43f8d6aec8bbf5603a9ab908f39f447f5d",
+      "feature_statistics": {
+        "mean_epistemic_uncertainty": {
+          "mean": 0.165941,
+          "std": 0.036853,
+          "min": 0.074749,
+          "max": 0.233082
+        },
+        "min_epistemic_uncertainty": {
+          "mean": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 1e-06
+        },
+        "max_epistemic_uncertainty": {
+          "mean": 1.485915,
+          "std": 0.199176,
+          "min": 1.11461,
+          "max": 2.02649
+        },
+        "std_epistemic_uncertainty": {
+          "mean": 0.200426,
+          "std": 0.02493,
+          "min": 0.133516,
+          "max": 0.266408
+        },
+        "variance_epistemic_uncertainty": {
+          "mean": 0.040774,
+          "std": 0.010008,
+          "min": 0.017826,
+          "max": 0.070973
+        }
+      }
+    },
+    "dataset_4_epistemic_temporal.parquet": {
+      "dataset_id": "dataset_4",
+      "name": "Model-Based (Epistemic) Temporal",
+      "description": "Evaluates whether epistemic uncertainty shifts over reasoning steps provide key predictive signals.",
+      "uncertainty_type": "epistemic",
+      "granularity": "temporal",
+      "rows": 34,
+      "columns": 11,
+      "feature_columns": [
+        "early_stage_epistemic_mean",
+        "middle_stage_epistemic_mean",
+        "late_stage_epistemic_mean",
+        "epistemic_slope",
+        "epistemic_r2_linearity"
+      ],
+      "feature_count": 5,
+      "file_size_bytes": 181327,
+      "sha256": "8d15427d2c02e28695b1c4cce0dafca7ed543fc90337f672c83258ddec7a6113",
+      "feature_statistics": {
+        "early_stage_epistemic_mean": {
+          "mean": 0.155145,
+          "std": 0.04268,
+          "min": 0.064104,
+          "max": 0.253961
+        },
+        "middle_stage_epistemic_mean": {
+          "mean": 0.166842,
+          "std": 0.046762,
+          "min": 0.073695,
+          "max": 0.246519
+        },
+        "late_stage_epistemic_mean": {
+          "mean": 0.175829,
+          "std": 0.048844,
+          "min": 0.049734,
+          "max": 0.261875
+        },
+        "epistemic_slope": {
+          "mean": 0.030931,
+          "std": 0.076562,
+          "min": -0.153836,
+          "max": 0.180604
+        },
+        "epistemic_r2_linearity": {
+          "mean": 0.01486,
+          "std": 0.020682,
+          "min": 0.0,
+          "max": 0.080744
+        }
+      }
+    },
+    "dataset_5_multimodal_combined.parquet": {
+      "dataset_id": "dataset_5",
+      "name": "Multimodal Uncertainty Combined",
+      "description": "Full multimodal system combining all aleatoric and epistemic features across aggregate and temporal dynamics.",
+      "uncertainty_type": "multimodal",
+      "granularity": "combined",
+      "rows": 34,
+      "columns": 35,
+      "feature_columns": [
+        "mean_entropy",
+        "mean_token_probability",
+        "mean_log_probability",
+        "mean_negative_log_likelihood",
+        "perplexity",
+        "min_log_probability",
+        "max_log_probability",
+        "std_log_probability",
+        "min_k_log_probability",
+        "mean_top1_probability",
+        "mean_top2_probability_margin",
+        "fraction_selected_is_top1",
+        "fraction_high_confidence",
+        "fraction_low_confidence",
+        "early_stage_aleatoric_mean",
+        "middle_stage_aleatoric_mean",
+        "late_stage_aleatoric_mean",
+        "aleatoric_slope",
+        "aleatoric_r2_linearity",
+        "mean_epistemic_uncertainty",
+        "min_epistemic_uncertainty",
+        "max_epistemic_uncertainty",
+        "std_epistemic_uncertainty",
+        "variance_epistemic_uncertainty",
+        "early_stage_epistemic_mean",
+        "middle_stage_epistemic_mean",
+        "late_stage_epistemic_mean",
+        "epistemic_slope",
+        "epistemic_r2_linearity"
+      ],
+      "feature_count": 29,
+      "file_size_bytes": 203771,
+      "sha256": "f7cb65fe7f943d4bb4ef5af77745db2816eebeab8f6833dfa6c50386cbcec85f",
+      "feature_statistics": {
+        "mean_entropy": {
+          "mean": 0.26397,
+          "std": 0.075573,
+          "min": 0.085435,
+          "max": 0.415487
+        },
+        "mean_token_probability": {
+          "mean": 0.903367,
+          "std": 0.026413,
+          "min": 0.859913,
+          "max": 0.966377
+        },
+        "mean_log_probability": {
+          "mean": -0.129186,
+          "std": 0.036895,
+          "min": -0.197869,
+          "max": -0.042242
+        },
+        "mean_negative_log_likelihood": {
+          "mean": 0.129186,
+          "std": 0.036895,
+          "min": 0.042242,
+          "max": 0.197869
+        },
+        "perplexity": {
+          "mean": 1.138649,
+          "std": 0.041615,
+          "min": 1.043147,
+          "max": 1.218803
+        },
+        "min_log_probability": {
+          "mean": -1.79356,
+          "std": 0.203061,
+          "min": -2.263253,
+          "max": -1.294186
+        },
+        "max_log_probability": {
+          "mean": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "std_log_probability": {
+          "mean": 0.253966,
+          "std": 0.04203,
+          "min": 0.139309,
+          "max": 0.345751
+        },
+        "min_k_log_probability": {
+          "mean": -0.557072,
+          "std": 0.128991,
+          "min": -0.804961,
+          "max": -0.210707
+        },
+        "mean_top1_probability": {
+          "mean": 0.903367,
+          "std": 0.026413,
+          "min": 0.859913,
+          "max": 0.966377
+        },
+        "mean_top2_probability_margin": {
+          "mean": 0.839339,
+          "std": 0.041653,
+          "min": 0.77094,
+          "max": 0.939145
+        },
+        "fraction_selected_is_top1": {
+          "mean": 1.0,
+          "std": 0.0,
+          "min": 1.0,
+          "max": 1.0
+        },
+        "fraction_high_confidence": {
+          "mean": 0.745466,
+          "std": 0.065638,
+          "min": 0.634033,
+          "max": 0.902832
+        },
+        "fraction_low_confidence": {
+          "mean": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "early_stage_aleatoric_mean": {
+          "mean": 0.239144,
+          "std": 0.084346,
+          "min": 0.075475,
+          "max": 0.4796
+        },
+        "middle_stage_aleatoric_mean": {
+          "mean": 0.266938,
+          "std": 0.09311,
+          "min": 0.079531,
+          "max": 0.430187
+        },
+        "late_stage_aleatoric_mean": {
+          "mean": 0.285812,
+          "std": 0.100699,
+          "min": 0.070117,
+          "max": 0.474559
+        },
+        "aleatoric_slope": {
+          "mean": 0.069672,
+          "std": 0.137407,
+          "min": -0.245989,
+          "max": 0.336997
+        },
+        "aleatoric_r2_linearity": {
+          "mean": 0.010305,
+          "std": 0.014047,
+          "min": 1e-06,
+          "max": 0.052541
+        },
+        "mean_epistemic_uncertainty": {
+          "mean": 0.165941,
+          "std": 0.036853,
+          "min": 0.074749,
+          "max": 0.233082
+        },
+        "min_epistemic_uncertainty": {
+          "mean": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 1e-06
+        },
+        "max_epistemic_uncertainty": {
+          "mean": 1.485915,
+          "std": 0.199176,
+          "min": 1.11461,
+          "max": 2.02649
+        },
+        "std_epistemic_uncertainty": {
+          "mean": 0.200426,
+          "std": 0.02493,
+          "min": 0.133516,
+          "max": 0.266408
+        },
+        "variance_epistemic_uncertainty": {
+          "mean": 0.040774,
+          "std": 0.010008,
+          "min": 0.017826,
+          "max": 0.070973
+        },
+        "early_stage_epistemic_mean": {
+          "mean": 0.155145,
+          "std": 0.04268,
+          "min": 0.064104,
+          "max": 0.253961
+        },
+        "middle_stage_epistemic_mean": {
+          "mean": 0.166842,
+          "std": 0.046762,
+          "min": 0.073695,
+          "max": 0.246519
+        },
+        "late_stage_epistemic_mean": {
+          "mean": 0.175829,
+          "std": 0.048844,
+          "min": 0.049734,
+          "max": 0.261875
+        },
+        "epistemic_slope": {
+          "mean": 0.030931,
+          "std": 0.076562,
+          "min": -0.153836,
+          "max": 0.180604
+        },
+        "epistemic_r2_linearity": {
+          "mean": 0.01486,
+          "std": 0.020682,
+          "min": 0.0,
+          "max": 0.080744
+        }
+      }
+    }
+  }
+}

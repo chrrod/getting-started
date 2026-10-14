@@ -25,4 +25,5 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pyarrow>=17",
+    "pytest>=9.1.1",
 ]

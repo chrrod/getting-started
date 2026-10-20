@@ -2,14 +2,13 @@ import numpy as np
 import pandas as pd
 import aleatoric_features as af
 import json
-from sklearn.model_selection import train_test_split
+
+from sklearn.model_selection import StratifiedGroupKFold, cross_validate
 from sklearn.preprocessing import StandardScaler
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
-from sklearn.metrics import classification_report, roc_auc_score
 
-
-# 1. Define your feature names for clarity
+# 1. Define your feature names
 ALEATORIC_AGGREGATE_FEATURES = (
     "mean_entropy",
     "mean_token_probability",
@@ -27,66 +26,80 @@ ALEATORIC_AGGREGATE_FEATURES = (
     "fraction_low_confidence",
 )
 
-# --- MOCK DATA FOR DEMONSTRATION ---
-# Replace this with your actual DataFrame loading logic (e.g., pd.read_csv("data.csv"))
+# 2. Load data
 data_list = []
 
-with open('data/generated/deepseek_test.jsonl', 'r', encoding='utf-8') as f:
-    data = [json.loads(line) for line in f]
-    data_list.append(data)
+files = [
+    "data/generated/deepseek_test.jsonl",
+    "data/generated/olmo.jsonl",
+    "data/generated/qwen3-5.jsonl",
+    "data/generated/skywork.jsonl",
+]
 
-with open('data/generated/olmo.jsonl', 'r', encoding='utf-8') as f:
-    data = [json.loads(line) for line in f]
-    data_list.append(data)
+for file_path in files:
+    with open(file_path, "r", encoding="utf-8") as f:
+        data_list.append([json.loads(line) for line in f])
 
-with open('data/generated/qwen3-5.jsonl', 'r', encoding='utf-8') as f:
-    data = [json.loads(line) for line in f]
-    data_list.append(data)
-with open('data/generated/skywork.jsonl', 'r', encoding='utf-8') as f:
-    data = [json.loads(line) for line in f]
-    data_list.append(data)
+# Extract features from every dataset
+dfs = [
+    af.extract_aleatoric_features_dataset(data, aggregate_only=True)
+    for data in data_list
+]
 
-df = af.extract_aleatoric_features_dataset(data_list[0], aggregate_only=True)
-for i in range(1, len(data_list)):
-    df = pd.concat([df, af.extract_aleatoric_features_dataset(data_list[1], aggregate_only=True)], ignore_index=True)
+df = pd.concat(dfs, ignore_index=True)
 
-# df = pd.DataFrame(X_data, columns=ALEATORIC_AGGREGATE_FEATURES)
-# df['target'] = X_data['model_is_robust']
-# # ------------------------------------
-
-# 2. Split features and target
+# 3. Separate features and target
 X = df[list(ALEATORIC_AGGREGATE_FEATURES)]
-y = df['model_is_robust'].astype(int) # Convert boolean True/False to 1/0
+y = df["model_is_robust"].astype(int)
 
-# 3. Train-test split
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.2, random_state=464, stratify=y
-)
+# IMPORTANT:
+# Replace "group_id" with the actual column identifying
+# samples that must stay together in the same fold.
+groups = df["model_id"]
 
-# 4. Create a Pipeline with a Scaler and Logistic Regression
-# solver='liblinear' or 'lbfgs' work well for tabular datasets
+# 4. Define the model pipeline
 clf_pipeline = Pipeline([
-    ('scaler', StandardScaler()),
-    ('classifier', LogisticRegression(C=1.0, l1_ratio=0, class_weight = 'balanced', random_state=464))
+    ("scaler", StandardScaler()),
+    ("classifier", LogisticRegression(
+        C=1.0,
+        l1_ratio=0,
+        class_weight="balanced",
+        max_iter=5000,
+    )),
 ])
 
-# 5. Train the model
-clf_pipeline.fit(X_train, y_train)
+# 5. Set up 5-fold stratified group cross-validation
+cv = StratifiedGroupKFold(
+    n_splits=4,
+    shuffle=True,
+    random_state=464,
+)
 
-# 6. Evaluate the model
-y_pred = clf_pipeline.predict(X_test)
-y_prob = clf_pipeline.predict_proba(X_test)[:, 1]
+# 6. Evaluate using cross-validation
+scoring = {
+    "accuracy": "accuracy",
+    "precision": "precision",
+    "recall": "recall",
+    "f1": "f1",
+    "roc_auc": "roc_auc",
+}
 
-print("Classification Report:")
-print(classification_report(y_test, y_pred))
-print(f"ROC-AUC Score: {roc_auc_score(y_test, y_prob):.4f}")
+cv_results = cross_validate(
+    estimator=clf_pipeline,
+    X=X,
+    y=y,
+    groups=groups,
+    cv=cv,
+    scoring=scoring,
+    return_train_score=False,
+    n_jobs=-1,
+)
 
-# Optional: Inspect feature coefficients to see which metrics drive predictions most
-model = clf_pipeline.named_steps['classifier']
-feature_importance = pd.DataFrame({
-    'Feature': ALEATORIC_AGGREGATE_FEATURES,
-    'Coefficient': model.coef_[0]
-}).sort_values(by='Coefficient', key=abs, ascending=False)
+# 7. Report results for each fold and overall
+for metric in scoring:
+    scores = cv_results[f"test_{metric}"]
 
-print("\nTop Feature Coefficients:")
-print(feature_importance.head(10))
+    print(f"\n{metric.upper()}:")
+    print(f"  Fold scores: {np.round(scores, 4)}")
+    print(f"  Mean:        {scores.mean():.4f}")
+    print(f"  Std:         {scores.std():.4f}")

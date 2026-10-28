@@ -25,6 +25,7 @@ from data_prep import (  # noqa: E402
     standardize_trace_records,
     validate_standard_schema,
 )
+from uncertainty_features import extract_features_dataset  # noqa: E402
 
 
 # ---------------------------------------------------------
@@ -258,6 +259,12 @@ def main():
         "--export-parquet",
         default=None,
         help="Optional path to export standard-schema Parquet dataset",
+    )
+
+    parser.add_argument(
+        "--export-features",
+        default=None,
+        help="Optional path to extract and export 29-feature Parquet dataset",
     )
 
     parser.add_argument(
@@ -524,6 +531,25 @@ def main():
         print(
             f"Successfully exported {len(standard_df)} standardized rows "
             f"matching core schema: {CORE_SCHEMA_COLUMNS}"
+        )
+
+    # -----------------------------------------------------
+    # Optional export to 29-feature Parquet
+    # -----------------------------------------------------
+
+    if args.export_features:
+        features_path = Path(args.export_features)
+        print(f"Extracting 29 uncertainty features to {features_path}...")
+        records = []
+        with output_path.open("r", encoding="utf-8") as stream:
+            for line in stream:
+                if line.strip():
+                    records.append(json.loads(line))
+        features_df = extract_features_dataset(records, feature_set="all")
+        atomic_write_dataframe(features_df, features_path, format="parquet")
+        print(
+            f"Successfully exported {len(features_df)} feature rows "
+            f"with 29 uncertainty features to {features_path}"
         )
 
 
